@@ -1,7 +1,7 @@
 {
-  "name": "@digital-boss/n8n-nodes-voipmon",
+  "name": "@digital-boss/n8n-nodes-phpipam",
   "version": "0.1.1",
-  "description": "Voipmon support for n8n.",
+  "description": "Phpipam support for n8n.",
   "license": "MIT",
   "homepage": "https://n8n.io",
   "author": {
@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/digital-boss/n8n-nodes-voipmon.git"
+    "url": "git+https://github.com/digital-boss/n8n-nodes-phpipam.git"
   },
   "main": "index.js",
   "scripts": {
@@ -30,10 +30,10 @@
   ],
   "n8n": {
     "credentials": [
-      "dist/credentials/VoipmonApi.credentials.js"
+      "dist/credentials/PhpipamApi.credentials.js"
     ],
     "nodes": [
-      "dist/nodes/Voipmon/Voipmon.node.js"
+      "dist/nodes/Phpipam/Phpipam.node.js"
     ]
   },
   "devDependencies": {

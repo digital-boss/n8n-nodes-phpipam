@@ -1,9 +1,9 @@
 import { ICredentialType, INodeProperties } from 'n8n-workflow';
 
-export class VoipmonApi implements ICredentialType {
-	name = 'voipmonApi';
-	displayName = 'Voipmon API';
-	documentationUrl = 'voipmon';
+export class PhpipamApi implements ICredentialType {
+	name = 'phpipamApi';
+	displayName = 'Phpipam API';
+	documentationUrl = 'phpipam';
 	properties: INodeProperties[] = [
 		// The credentials to get from user and save encrypted.
 		// Properties can be defined exactly in the same way
@@ -11,6 +11,12 @@ export class VoipmonApi implements ICredentialType {
 		{
 			displayName: 'Url',
 			name: 'url',
+			type: 'string',
+			default: '',
+		},
+		{
+			displayName: 'App Id',
+			name: 'app_id',
 			type: 'string',
 			default: '',
 		},

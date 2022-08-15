@@ -12,32 +12,39 @@ import {
 	NodeApiError,
 } from 'n8n-workflow';
 
-import { simplify, voipmonApiRequest } from './GenericFunctions';
+import { phpipamApiRequest, simplify } from './GenericFunctions';
 
 import { version } from '../version';
-import { audioFields, audioOperations } from './descriptions';
+import {
+	addressesFields,
+	addressesOperations,
+	sectionsFields,
+	sectionsOperations,
+	subnetsFields,
+} from './descriptions';
 import { OptionsWithUri } from 'request-promise-native';
+import { subnetsOperations } from './descriptions/SubnetsDescription';
 
-export class Voipmon implements INodeType {
+export class Phpipam implements INodeType {
 	description: INodeTypeDescription = {
-		displayName: 'Voipmon',
-		name: 'Voipmon',
-		icon: 'file:voipmon.svg',
+		displayName: 'Phpipam',
+		name: 'Phpipam',
+		icon: 'file:phpipam.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
-		description: `Consume Voipmon API (v.${version})`,
+		description: `Consume Phpipam API (v.${version})`,
 		defaults: {
-			name: 'voipmon',
+			name: 'phpipam',
 			color: '#FF6000',
 		},
 		inputs: ['main'],
 		outputs: ['main'],
 		credentials: [
 			{
-				name: 'voipmonApi',
+				name: 'phpipamApi',
 				required: true,
-				testedBy: 'testVoipmonApiAuth',
+				testedBy: 'testPhpipamApiAuth',
 			},
 		],
 		properties: [
@@ -47,27 +54,40 @@ export class Voipmon implements INodeType {
 				type: 'options',
 				options: [
 					{
-						name: 'Audio',
-						value: 'audio',
+						name: 'Sections',
+						value: 'sections',
+					},
+					{
+						name: 'Subnets',
+						value: 'subnets',
+					},
+					{
+						name: 'Addresses',
+						value: 'addresses',
 					},
 				],
-				default: 'audio',
+				default: 'sections',
 				required: true,
 				description: 'Resource to consume',
 			},
-			...audioOperations,
-			...audioFields,
+			...sectionsOperations,
+			...sectionsFields,
+			...subnetsOperations,
+			...subnetsFields,
+			...addressesOperations,
+			...addressesFields,
 		],
 	};
 
 	methods = {
 		credentialTest: {
-			async testVoipmonApiAuth(
+			async testPhpipamApiAuth(
 				this: ICredentialTestFunctions,
 				credential: ICredentialsDecrypted,
 			): Promise<INodeCredentialTestResult> {
 				if (
 					!credential.data?.url &&
+					!credential.data?.app_id &&
 					!credential.data?.user &&
 					!credential.data?.password
 				) {
@@ -78,14 +98,14 @@ export class Voipmon implements INodeType {
 				}
 
 				const options: OptionsWithUri = {
-					method: 'GET',
-					headers: {},
-					qs: {
-						user: credential.data.user,
-						password: credential.data.password,
-						task: 'listActiveCalls',
+					method: 'POST',
+					headers: {
+						Authorization: `Basic ${Buffer.from(
+							`${credential.data.user}:${credential.data.password}`,
+						).toString('base64')}`,
 					},
-					uri: credential.data.url as string,
+					qs: {},
+					uri: `${credential.data.url}/api/${credential.data.app_id}/user` as string,
 					timeout: 5000,
 					json: true,
 				};
@@ -128,133 +148,87 @@ export class Voipmon implements INodeType {
 		const operation = this.getNodeParameter('operation', 0) as string;
 		const body: IDataObject = {};
 		let method = '';
-		const endpoint = '';
-		let qsTemp = {} as any;
-		const params = {} as any;
+		let endpoint = '';
 		const qs: IDataObject = {};
 
 		for (let i = 0; i < items.length; i++) {
 			try {
 				switch (resource) {
-					case 'audio':
+					case 'sections':
 						switch (operation) {
-							case 'listActiveCalls':
+							case 'list':
 								// ----------------------------------
-								//        audio:listActiveCalls
+								//        sections:list
 								// ----------------------------------
-
-								if (this.getNodeParameter('sensorId', i)) {
-									params['sensorId'] = this.getNodeParameter('sensorId', i);
-								}
-
-								Object.assign(qs, {
-									task: operation,
-									params,
-								});
-
+								endpoint = '/sections';
 								method = 'GET';
 								break;
 
-							case 'getVoipCalls':
+							case 'getSectionsSubnets':
 								// ----------------------------------
-								//        audio:getVoipCalls
+								//        sections:getSectionsSubnets
 								// ----------------------------------
-								params['startTime'] = this.getNodeParameter('startTime', i);
-								params['endTime'] = this.getNodeParameter('endTime', i);
-								params['caller'] = this.getNodeParameter('caller', i);
-
-								if (this.getNodeParameter('startTimeTo', i)) {
-									params['startTimeTo'] = this.getNodeParameter(
-										'startTimeTo',
-										i,
-									);
-								}
-
-								if (this.getNodeParameter('callEnd', i)) {
-									params['callEnd'] = this.getNodeParameter('callEnd', i);
-								}
-
-								if (this.getNodeParameter('called', i)) {
-									params['called'] = this.getNodeParameter('called', i);
-								}
-
-								if (this.getNodeParameter('onlyConnected', i)) {
-									params['onlyConnected'] = this.getNodeParameter(
-										'onlyConnected',
-										i,
-									);
-								}
-
-								qsTemp = {
-									task: operation,
-									called: this.getNodeParameter('caller', i),
-									params,
-								};
-
-								if (this.getNodeParameter('auditReason', i)) {
-									qsTemp['auditReason'] = this.getNodeParameter(
-										'auditReason',
-										i,
-									);
-								}
-
-								Object.assign(qs, qsTemp);
-
+								endpoint = `/sections/${
+									this.getNodeParameter('section_id', i) as string
+								}/subnets/addresses`;
 								method = 'GET';
 								break;
 
-							case 'reportSummary':
+							default:
+								break;
+						}
+						break;
+
+					case 'subnets':
+						switch (operation) {
+							case 'list':
 								// ----------------------------------
-								//        audio:reportSummary
+								//        subnets:list
 								// ----------------------------------
-								params['report_name'] = this.getNodeParameter('reportName', i);
-
-								params['datetime_from'] = this.getNodeParameter(
-									'dateTimeFrom',
-									i,
-								);
-
-								params['datetime_to'] = this.getNodeParameter('dateTimeTo', i);
-
-								if (this.getNodeParameter('json', i)) {
-									params['json'] = this.getNodeParameter('json', i);
-								}
-
-								Object.assign(qs, {
-									task: operation,
-									params,
-								});
-
+								endpoint = '/subnets';
 								method = 'GET';
 								break;
 
-							case 'getPCAP':
+							case 'listAll':
 								// ----------------------------------
-								//        audio:getPCAP
+								//        subnets:listAll
 								// ----------------------------------
+								endpoint = '/subnets/all';
+								method = 'GET';
+								break;
 
-								params['callId'] = this.getNodeParameter('callId', i);
+							default:
+								break;
+						}
+						break;
 
-								if (this.getNodeParameter('cidInterval', i)) {
-									params['cidInterval'] = this.getNodeParameter(
-										'cidInterval',
-										i,
-									);
-								}
+					case 'addresses':
+						switch (operation) {
+							case 'get':
+								// ----------------------------------
+								//        addresses:get
+								// ----------------------------------
+								endpoint = `/addresses/${
+									this.getNodeParameter('address_id', i) as string
+								}`;
+								method = 'GET';
+								break;
 
-								if (this.getNodeParameter('cidMerge', i)) {
-									params['cidMerge'] = this.getNodeParameter('cidMerge', i);
-								}
+							case 'listAll':
+								// ----------------------------------
+								//        addresses:listAll
+								// ----------------------------------
+								endpoint = '/addresses/all';
+								method = 'GET';
+								break;
 
-								if (this.getNodeParameter('zip', i)) {
-									params['zip'] = this.getNodeParameter('zip', i);
-								}
-
-								Object.assign(qs, {
-									task: operation,
-									params,
-								});
-
+							case 'ping':
+								// ----------------------------------
+								//        addresses:ping
+								// ----------------------------------
+								endpoint = `/addresses/${
+									this.getNodeParameter('address_id', i) as string
+								}/ping`;
 								method = 'GET';
 								break;
 
@@ -267,7 +241,7 @@ export class Voipmon implements INodeType {
 						break;
 				}
 
-				responseData = await voipmonApiRequest.call(
+				responseData = await phpipamApiRequest.call(
 					this,
 					method,
 					endpoint,
@@ -283,11 +257,7 @@ export class Voipmon implements INodeType {
 					throw new NodeApiError(this.getNode(), responseData);
 				}
 
-				if (responseData.rows) responseData = responseData.rows;
-
-				if (operation === 'getVoipCalls' && responseData.cdr) {
-					responseData = responseData.cdr;
-				}
+				if (responseData.data) responseData = responseData.data;
 
 				if (Array.isArray(responseData)) {
 					returnData.push.apply(returnData, responseData as IDataObject[]);

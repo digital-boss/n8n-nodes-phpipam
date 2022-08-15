@@ -9,7 +9,7 @@ import {
 
 import { IDataObject, NodeApiError, NodeOperationError } from 'n8n-workflow';
 
-export async function voipmonApiRequest(
+export async function phpipamApiRequest(
 	this:
 		| IHookFunctions
 		| IExecuteFunctions
@@ -24,7 +24,7 @@ export async function voipmonApiRequest(
 	// tslint:disable-line:no-any
 
 	//Get credentials the user provided for this node
-	const credentials = (await this.getCredentials('voipmonApi')) as IDataObject;
+	const credentials = (await this.getCredentials('phpipamApi')) as IDataObject;
 
 	if (credentials === undefined) {
 		throw new NodeOperationError(
@@ -33,17 +33,34 @@ export async function voipmonApiRequest(
 		);
 	}
 
+	const {
+		data: { token },
+	} = await this.helpers.request!({
+		method: 'POST',
+		headers: {
+			Authorization: `Basic ${Buffer.from(
+				`${credentials.user}:${credentials.password}`,
+			).toString('base64')}`,
+		},
+		qs: {},
+		uri: `${credentials.url}/api/${credentials.app_id}/user` as string,
+		timeout: 5000,
+		json: true,
+	});
+
+	if (!token) {
+		throw new NodeApiError(this.getNode(), { message: 'Access Denied' });
+	}
+
 	//Make http request according to <https://sendgrid.com/docs/api-reference/>
 	const options: OptionsWithUri = {
 		method,
-		headers: {},
-		qs: {
-			user: credentials.user,
-			password: credentials.password,
-			...qs,
+		headers: {
+			token,
 		},
+		qs,
 		body,
-		uri: credentials.url as string,
+		uri: `${credentials.url}/api/${credentials.app_id}${endpoint}` as string,
 		json: true,
 	};
 
