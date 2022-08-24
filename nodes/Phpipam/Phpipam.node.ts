@@ -86,9 +86,9 @@ export class Phpipam implements INodeType {
 				credential: ICredentialsDecrypted,
 			): Promise<INodeCredentialTestResult> {
 				if (
-					!credential.data?.url &&
-					!credential.data?.app_id &&
-					!credential.data?.user &&
+					!credential.data?.url ||
+					!credential.data?.app_id ||
+					!credential.data?.user ||
 					!credential.data?.password
 				) {
 					return {
