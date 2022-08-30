@@ -29,7 +29,7 @@ export class Phpipam implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Phpipam',
 		name: 'Phpipam',
-		icon: 'file:phpipam.svg',
+		icon: 'file:phpipam.png',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
@@ -86,9 +86,9 @@ export class Phpipam implements INodeType {
 				credential: ICredentialsDecrypted,
 			): Promise<INodeCredentialTestResult> {
 				if (
-					!credential.data?.url &&
-					!credential.data?.app_id &&
-					!credential.data?.user &&
+					!credential.data?.url ||
+					!credential.data?.app_id ||
+					!credential.data?.user ||
 					!credential.data?.password
 				) {
 					return {
