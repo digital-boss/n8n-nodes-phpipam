@@ -29,7 +29,7 @@ export class Phpipam implements INodeType {
 	description: INodeTypeDescription = {
 		displayName: 'Phpipam',
 		name: 'Phpipam',
-		icon: 'file:phpipam.png',
+		icon: 'file:phpipam.svg',
 		group: ['transform'],
 		version: 1,
 		subtitle: '={{$parameter["operation"] + ": " + $parameter["resource"]}}',
